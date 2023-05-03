@@ -1,4 +1,4 @@
-﻿# Segment Anything Model (SAM)
+# Segment Anything Model (SAM)
 
 Le modèle **Segment Anything (SAM)** produit des masques d'objets de haute qualité à partir d'entrée telles que des points ou des boîtes, et il peut être utilisé pour générer des masques pour tous les objets d'une image. Il a été entraîné sur un ensemble de données de 11 millions d'images et de 1,1 milliard de masques.
 
@@ -7,11 +7,95 @@ Le modèle **Segment Anything (SAM)** produit des masques d'objets de haute qual
 
 **SAM** permet de segmenter des images en créant plusieurs masques pour détourer des objets (voir [la démo](https://segment-anything.com/demo))
 
+## Fonctionnement d'un Transformer
+
+![Fonctionnement du Transformer](https://production-media.paperswithcode.com/methods/new_ModalNet-21.jpg)
+
+Pour notre exemple, les inputs seront des mots d'une phrase et le Transformer doit produire en sortie une réponse à cette phrase.
+
+### Attention
+
+Avant tout, il est important de comprendre à quoi sert l'attention. L'attention permet de définir sur quelle partie de la phrase d'entrée nous devons nous concentrer. L'attention nous permet de mesurer et de quantifier comment les mots sont reliés entre eux dans une phrase.
+
+### Input Embedding
+
+La couche Input Embedding permet de prendre chaque mot en entrée et de les transformer en vecteurs contenant des valeurs décimales représentant ce mot.
+
+En effet, un ordinateur ne comprend pas les mots, on le traduit donc par un point de l'espace défini par des coordonnées et tous les mots d'une même famille seront plus ou moins proches sur un plan.
+
+### Positional Encoding
+
+Il faut ajouter à chaque vecteur un vecteur de position (appelé positional embedding) permettant au Transformer de connaître la position de chaque mot, car la position des mots dans une phrase est importante. Pour créer ces vecteurs, on utilise les fonctions sinus et cosinus.
+
+![PE formules](https://i.stack.imgur.com/PxeeE.png)
+
+![détails PE](https://i.stack.imgur.com/mGSYD.png)
+
+Pour les inputs pairs, on utilise la fonction sinus et pour les inputs impairs on utilise la fonction cosinus.
+
+Ces vecteurs de position sont ensuite ajoutés à leur vecteurs d'embedding (les vecteurs représentant les mots) correspondant pour donner de nouveaux vecteurs (Positional Input Embeddings)
+
+### Encoder Layer
+
+Le but de l'Encoder est d'encoder l'input dans une représentation continue avec des informations d'attention. C'est ce qui va aider le Decoder à se concentrer sur les mots les plus importants durant le décodage.
+
+Il est possible de mettre en place plusieurs Encoder et chaque couche aura la possibilité d'apprendre différentes représentations de l'attention pour booster les capacités prédictives du Transformer.
+
+#### Multi-Headed Attention
+
+![Attention mécanisme](https://data-science-blog.com/wp-content/uploads/2022/01/mha_img_original.png)
+
+Les vecteurs Q (queries) et K (keys) sont multipliées entre eux pour donner une matrice de scores. Cette matrice de scores sert à déterminer à quel degré les mots dépendent des autres dans la phrase d'input. 
+
+Ensuite, cette matrice de score est "scalé" en la divisant par la racine carré de la dimension des matrices Q et K.
+
+On applique ensuite la fonction de softmax sur cette matrice de scores scalé, ce qui nous donne maintenant une matrice de probabilités. Grâce à l'opération de softmax, les scores les plus élevés sont augmentés, et les scores les plus faibles sont diminués.
+
+![Softmax formule](data:image/png;base64,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)
+
+On multiplie ensuite cette matrice par le vecteur V, ce qui nous donne un vecteur d'output.
+
+Pour respecter le mécanisme "multi-têtes", les vecteurs Q, K et V doivent être divisés en N vecteurs avant d'y appliquer le mécanisme d'attention. Chaque processus d'attention est appelé "head", chaque "head" produit un vecteur de sortie qui est ensuite concaténé avec tous les autres vecteurs de sortie. Chaque head est censé apprendre quelque chose de différent, ce qui rend la couche Encoder encore plus puissante.
+
+#### Normalization Layer
+
+La couche de normalisation a pour but de mettre les valeurs à la même échelle (moyenne = 0 et variance = 1). Ce qui va permettre de réduire la dépendance des gradients entre chaque couche du réseau de neurones. Les autres gradients n'auront pas à ajuster les valeurs puisqu'elles seront toujours à la même échelle. Cela réduit donc le nombre d'étapes pour converger vers le minimum de la fonction coût et donc accélère l'apprentissage. 
+
+#### Feed-Forward
+
+Cette couche contient simplement un réseau de neurones "feed forward" qui est appliqué à chacun des vecteurs d'attention. Ces réseaux sont utilisés pour transformer le vecteur d'attention en quelque chose de compréhensible pour la prochaine couche d'Encoder ou le Decoder.
+
+### Decoder Layer
+
+Le but du Decoder est de générer des séquences de texte. Le Decoder s'arrête de générer du texte lorsqu'il génère un token "end". On peut également mettr en place plusieurs Decoder, ce qui peut booster sa puissance de prédiction.
+
+Les étapes d'**Output Embedding** et de **Positional Encoding** sont les mêmes que pour l'Encoder.
+
+La liste d'inputs du Decoder ne contient à la base qu'un token "start".
+
+#### Masked Multi-Headed Attention
+
+Le but de cette sous couche, comme dans celle de l'Encoder est de produire en sortie des scores d'attention pour les entrées de la couche Decoder. Son fonctionnement diffère cependant légèrement.
+
+En effet, le rôle du Decoder est de générer une séquence de texte mot par mot, par conséquent, les mots générés par le Decoder ne peuvent avoir accès qu'aux mots placés avant eux dans la séquence, pas ceux placés après.
+
+On rajoute donc une étape de "masking" qui consiste à ajouter un "Look-Ahead Mask" à la matrice des scores scalé. Pour se faire, on additionne à la matrice des scores une autre matrice triangulaire inférieure de même dimension que la matrice des scores où le triangle est composé de 0 et le reste de valeurs "-inf" (qui signifie moins l'infini), le reste est à 0. On obtient donc en résultat une matrice **Masked Scores** dont le triangle supérieur est égal à moins l'infini. Une fois que nous aurons appliqué la fonction **softmax** sur cette matrice Masked Scores, toutes les valeurs égales à moins l'infini vont être égales à 0 (car exp(-inf) -> 0). Le Decoder ne portera donc aucune importance sur les mots pas encore générés dans la séquence de texte puisque leur score d'attention sera égal à 0.
+
+#### Deuxième Multi-Headed Attention
+
+Le rôle de cette sous couche est de mapper les inputs de l'Encoder et du Decoder. Le Decoder va décider sur quels inputs de l'Encoder il est judicieux de porter de l'attention. La sortie de cette sous couche va ensuite passer dans une couche Feed Forward.
+
+### Sortie du Decoder Layer
+
+La première couche **Linear** en sortie du Decoder est une couche qui permet de classifier. En sortie de cette couche on obtient un vecteur de taille N où chaque case correspond à une classe. Si par exemple on a 20 classes pour 20 mots, alors la taille du vecteur en sortie de cette couche sera de taille 20.
+
+Ensuite, la couche **softmax** produit des probabilités pour chaque classe. On prend ensuite la classe avec la probabilité la plus élevée et ça sera le mot prédit.
+
+Le Decoder prend ensuite ce mot prédit et l'ajoute à la liste de ses inputs et continue de prédire jusqu'à ce que le token "end" soit prédit. Ce token est produit quand c'est la dernière classe du vecteur qui a la probabilité la plus élevée.
+
 ## Vision Transformer (ViT)
 
 Les ViT ont été conçus pour traiter des images de manière plus efficace et avec moins de données d'entraînement en utilisant une approche basée sur les Transformers.
-
-Les Transformers ont été introduits pour le traitement du langage naturel et ont depuis lors été appliqués avec succès à d'autres tâches, telles que la traduction automatique et la génération de texte.
 
 #### Fonctionnement du ViT
 
@@ -20,61 +104,5 @@ Le fonctionnement des ViT est assez simple. Tout d'abord, l'image est divisée e
 Les poids d'attention sont ensuite utilisés pour agréger les informations de chaque patch en un seul vecteur de caractéristiques, qui est transmis à une série de couches de transformation linéaire pour produire une représentation de l'image.
 
 Les ViT peuvent être utilisés pour la segmentation d'images en utilisant une approche appelée "segmentation basée sur l'attention" ou "attention-based segmentation". Dans cette approche, les ViT sont utilisés pour extraire des caractéristiques à partir de l'image, puis une couche d'attention est utilisée pour attribuer une étiquette de segment à chaque pixel de l'image en prenant en compte les relations spatiales entre les pixels.
-
-#### Les Vision Transformer MAE
-
-![ViT MAE](https://user-images.githubusercontent.com/11435359/146857310-f258c86c-fde6-48e8-9cee-badd2b21bd2c.png)
-
-Un Vision Transformer MAE (Merged Attention Embeddings) est une variante des Vision Transformers (ViT) qui utilise une méthode de fusion d'attention pour améliorer la performance de la classification d'images.
-
-Le Vision Transformer MAE utilise une approche différente pour traiter les relations spatiales entre les différentes parties de l'image. Au lieu de traiter chaque patch individuellement, le MAE combine plusieurs patches en un seul vecteur d'attention à l'aide d'une méthode de fusion d'attention.
-
-La méthode de fusion d'attention utilise les poids d'attention calculés pour chaque patch pour calculer un nouveau vecteur d'attention qui capture les relations spatiales entre les différents patches. Ce vecteur d'attention est ensuite utilisé pour agréger les informations de chaque patch en un seul vecteur de caractéristiques, qui est transmis aux couches de transformation linéaire pour la classification.
-
-## Zero-shot learning
-
-En apprentissage automatique, le zero-shot learning (apprentissage sans étiquette) est une approche qui permet de classifier des données sans avoir besoin de données d'entraînement pour toutes les classes. Au lieu de cela, cette méthode utilise des informations supplémentaires pour généraliser à de nouvelles classes non vues pendant l'entraînement.
-
-Plus précisément, cette technique consiste à entraîner un modèle à prédire des propriétés ou des attributs qui décrivent les données plutôt que de prédire directement leur classe. Ces propriétés ou attributs peuvent inclure des descriptions textuelles ou des caractéristiques visuelles, et sont souvent définis en amont ou annotés manuellement. Une fois que le modèle a été entraîné sur ces propriétés ou attributs, il peut être utilisé pour classer de nouvelles données en fonction de ces propriétés ou attributs, même si ces données n'ont jamais été vues auparavant.
-
-L'apprentissage sans étiquette est particulièrement utile lorsque les classes sont difficiles ou coûteuses à annoter, ou lorsque de nouvelles classes apparaissent régulièrement et doivent être ajoutées au modèle sans devoir re-entraîner complètement ce dernier.
-
-## Fonctionnement de SAM
-
-![SAM Schema](https://scontent-cdg4-1.xx.fbcdn.net/v/t39.2365-6/338558258_1349701259095991_4358060436604292355_n.png?_nc_cat=104&ccb=1-7&_nc_sid=ad8a9d&_nc_ohc=dAJexbuymEgAX8sEQ6Z&_nc_ht=scontent-cdg4-1.xx&oh=00_AfDIzJFjII7sj1dgjvpeEhSPFCPDhJiVD1zhrIAheZFMAQ&oe=644FE709)
-
-Le Segment Anything Model se compose de 3 éléments : un image encoder, un prompt encoder et un mask decoder.
-
-**L'image encoder :** C'est dans cette partie que se trouve le ViT MAE. Cet image encoder ne tourne qu'une seule fois par image
-
-**Le prompt encoder :** On distingue deux types de prompt, *sparse* (points, boîtes et texte) et *dense* (masque). Les points et les boîtes sont représentés par leur coordonnées et pour chaque type de prompt on y ajoute un "learned embedding". Un learned embedding est une représentation vectorielle apprise automatiquement par un algorithme de machine learning à partir des données d'entrée. Pour le texte, on utilise un text encoder de CLIP, c'est un modèle de traitement du langage naturel et de vision par ordinateur conçu pour effectuer des tâches de correspondance de texte à image (recherche d'image, annotation automatique ou classification).
-
-Pour les prompt *dense*, des convolutions sont utilisées, c'est une opération mathématique utilisée dans les réseaux de neurones convolutifs afin d'extraire des caractéristiques des images.
-
-**Le mask decoder :** Le rôle du mask decoder est de lier l'image embedding, les prompt embeddings et un output token à un masque.
-
-Le modèle Segment Anything Model utilise une architecture de Transformer similaire à celle utilisée dans les modèles de traitement de langage naturel. Cependant, au lieu de traiter des séquences de mots, le modèle Segment Anything Model traite des images divisées en une grille de patches. Cette grille de patches est transformée en une séquence de vecteurs d'embedding en utilisant une couche "patch embedding" (encodage de patch), qui permet de transformer chaque patch d'image en un vecteur de dimension fixe.
-
-Ensuite, la séquence de vecteurs d'embedding est passée à travers plusieurs couches d'encodage de Transformers, qui permettent au modèle d'apprendre des relations spatiales à longue portée entre les patches d'image. Ces couches d'encodage utilisent des mécanismes d'attention multi-têtes pour donner plus de poids aux patches importants de l'image lors de la segmentation.
-
-Après la phase d'encodage, le modèle Segment Anything Model utilise une couche de décodage qui utilise des convolutions pour prédire une carte de segmentation pixel par pixel. Cette couche de décodage utilise également des informations des couches d'encodage précédentes pour guider la prédiction des pixels de la carte de segmentation.
-
-Pour éviter les ambiguïtés, le modèle ne produit pas 1 mais 3 sorties (masques) pour couvrir tous les cas ambiguës possibles. Par exemple, pour chaque masque demandé, le modèle produira : l'entièreté, une partie, une sous-partie. Pour juger la qualité du masque, le modèle calcule également un score de confiance.
-
-L'ensemble du design du model est motivé par l'efficacité. Avec un image embedding précalculé, le prompt encoder et la mask decoder tournent dans un navigateur web en ~50ms en utilisant le CPU.
-
-## Focal Loss et Dice Loss
-
-Le Focal Loss et le Dice Loss sont deux fonctions de coût couramment utilisées dans la segmentation d'images.
-
-Le Focal Loss est une fonction de coût conçue pour résoudre le problème de déséquilibre de classes, où certaines classes peuvent avoir beaucoup moins d'exemples d'entraînement que d'autres. La fonction de coût Focal Loss attribue un poids plus élevé aux exemples mal classés pour les classes minoritaires, ce qui permet de mieux tenir compte de ces classes lors de l'entraînement.
-
-Le Dice Loss (ou Coefficient de Dice) est une fonction de coût qui mesure la similarité entre deux ensembles de valeurs binaires, généralement utilisée pour évaluer la qualité des segmentations d'images. Cette fonction de coût mesure la proportion de pixels correctement classés dans la segmentation prédite par rapport à la segmentation de référence. Le Dice Loss est plus adapté pour la segmentation d'images que pour la classification, car il prend en compte la similitude spatiale entre les régions d'objet.
-
-La combinaison de ces deux fonctions de coût est utilisée pour superviser la prédiction des masques.
-
-## Les limitations de SAM
-
-Le modèle de segmentation d'images Segment Anything Model (SAM) est performant dans l'ensemble, mais il n'est pas parfait. Il peut manquer de fines structures, halluciner de petites composantes déconnectées à certains moments et ne produit pas de frontières aussi nettes que des méthodes plus intensives en termes de calculs qui "zooment", par exemple. En général, il est attendu que des méthodes de segmentation interactive dédiées surpassent SAM lorsqu'un grand nombre de points sont fournis. Contrairement à ces méthodes, SAM est conçu pour la généralité et la large utilisation plutôt que pour la segmentation interactive avec un score d'IoU élevé. De plus, SAM peut traiter des demandes en temps réel, mais sa performance globale n'est pas en temps réel lorsqu'un encodeur d'image lourd est utilisé. Bien que SAM puisse accomplir de nombreuses tâches, il est difficile de concevoir des requêtes simples qui implémentent la segmentation sémantique et panoptique. Enfin, il existe des outils spécifiques à certains domaines, qui devraient surpasser SAM dans leurs domaines respectifs.
 
 
