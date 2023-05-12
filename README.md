@@ -51,7 +51,7 @@ Ensuite, cette matrice de score est "scalé" en la divisant par la racine carré
 
 On applique ensuite la fonction de softmax sur cette matrice de scores scalé, ce qui nous donne maintenant une matrice de probabilités. Grâce à l'opération de softmax, les scores les plus élevés sont augmentés, et les scores les plus faibles sont diminués.
 
-![Softmax formule](https://lh6.googleusercontent.com/3vcfJ5hJhsMZAMFIbQOEycfVW1t6rh1CXt62DeMk8RPPXVzV4vCcURNm_z_F7618uAeSHT7qT7wE_UiK5Ic0b-Eeuunn6iTGeHWbpAaUAP6-G2ePubeGWCb4_TmSapeaimZqvuUs)
+![Softmax formule](data:image/png;base64,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)
 
 On multiplie ensuite cette matrice par le vecteur V, ce qui nous donne un vecteur d'output.
 
@@ -95,14 +95,39 @@ Le Decoder prend ensuite ce mot prédit et l'ajoute à la liste de ses inputs et
 
 ## Vision Transformer (ViT)
 
-Les ViT ont été conçus pour traiter des images de manière plus efficace et avec moins de données d'entraînement en utilisant une approche basée sur les Transformers.
+Le **Vision Transformer** reprend à peu près le même fonctionnement que le Transformer.
 
-#### Fonctionnement du ViT
+![Vision Transformer Schema](https://learnopencv.com/wp-content/uploads/2023/02/image-9.png)
 
-Le fonctionnement des ViT est assez simple. Tout d'abord, l'image est divisée en une grille de petites images carrées appelées "patches". Chaque patch est ensuite linéarisé et transmis à une couche d'attention, qui calcule les poids d'attention pour chaque patch en fonction de ses relations avec les autres patches.
+On dispose en entrée d'une image que l'on divise en patches. On ajoute ensuite à ces patches une information sur la position, comme dans le fonctionnement d'un Transformer.
 
-Les poids d'attention sont ensuite utilisés pour agréger les informations de chaque patch en un seul vecteur de caractéristiques, qui est transmis à une série de couches de transformation linéaire pour produire une représentation de l'image.
+Un embedding [class] est ajouté à tous les autres embeddings, celui ci sert à la classification des éléments de l'image. Il reprend la même logique que le token [CLS]de BERT. Cet embedding représente la totalité des patches découpés dans l'image.
 
-Les ViT peuvent être utilisés pour la segmentation d'images en utilisant une approche appelée "segmentation basée sur l'attention" ou "attention-based segmentation". Dans cette approche, les ViT sont utilisés pour extraire des caractéristiques à partir de l'image, puis une couche d'attention est utilisée pour attribuer une étiquette de segment à chaque pixel de l'image en prenant en compte les relations spatiales entre les pixels.
+Les vecteurs représentant les patches passent ensuite dans la couche Encoder d'un Transformer.
 
+Après cet Encoder l'embedding spécial [class] est fourni en entrée d'un réseau de neurones pour classifier les éléments de l'image.
 
+## Fonctionnement de SAM
+
+![SAM](https://blog.roboflow.com/content/images/2023/04/image-1.png)
+
+SAM est composé de trois éléments principaux : 
+
+- Image Encoder : prend en entrée une image et en sortie produit des embeddings de cette image. Chaque tableau représente un patche auquel on a ajouté des informations sur l'attention et la position.
+
+- Prompt Encoder : Les points et les boîtes sont représentées par des positional encodings. Pour le texte, on utilise un encodeur de texte venant de CLIP (OpenAI) et pour les masques, on utilise convolutions qui sont ajoutées éléments par éléments avec les image embeddings.
+
+- Mask Decoder : reprend le fonctionnement du Decoder d'un Transformer. Prédit un masque avec les entrées du Prompt Encoder et de l'Image Encoder.
+
+## Liens vers les projets autour de SAM
+- [Grounded-SAM](https://github.com/IDEA-Research/Grounded-Segment-Anything)
+- [SAM-eo](https://github.com/aliaksandr960/segment-anything-eo/blob/main/README.md)
+- [SAM et QGIS](https://twitter.com/Luiseperezg/status/1656277561070977025)
+
+## Liens vers les papiers et explications
+- [Segment Anything](https://arxiv.org/abs/2304.02643)
+- [An Image is Worth 16x16 Words (ViT)](https://arxiv.org/abs/2010.11929)
+- [Attention is all you need (Transformer)](https://arxiv.org/abs/1706.03762)
+- [How Transformers Work](https://towardsdatascience.com/transformers-141e32e69591)
+- [Positional Encoding in Transformers](https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/)
+- [Vision Transformers Explained](https://www.pinecone.io/learn/vision-transformers/)
